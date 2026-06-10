@@ -11,3 +11,10 @@
     font-variation-settings: 
     "width" 100;
 }
+#index {
+    background-color: #f8f9fa;
+    height: 100 vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}

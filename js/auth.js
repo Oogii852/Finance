@@ -6,16 +6,17 @@ const passwordInput = document.getElementById('password')
 const btnRegister = document.getElementById('btn-register')
 const messageDiv = document.getElementById('message')
 
+// Бүртгүүлэх
 btnRegister.addEventListener('click', async () => {
     const email = emailInput.value
     const password = passwordInput.value
 
     if (!email || !password) {
-        showMessage("email bolon nuuts ugee guitsed oruulna uu!", "text-danger")
+        showMessage("Имэйл болон нууц үгээ гүйцэд оруулна уу!", "text-danger")
         return
     }
     if (password.length < 6) {
-        showMessage("nuuts ug dood tal ni 6 temdegt baih ystoi!", "text-danger")
+        showMessage("Нууц үг дөөд тал нь 6 тэмдэгт байх ёстой!", "text-danger")
         return
     }
 
@@ -25,13 +26,14 @@ btnRegister.addEventListener('click', async () => {
     })
 
     if (error) {
-        showMessage(`bvrtgel amjiltgui : ${error.message}`, "text-danger")
+        showMessage("Бүртгэл амжилтгүй: " + error.message, "text-danger")
     } else {
-        showMessage("bvrtgel amjilttai! ta nevtreh tovchiig darj orno uu.", "text-success")
+        showMessage("Бүртгэл амжилттай! Нэвтрэх товчийг дарж орно уу.", "text-success")
         passwordInput.value = ""
     }
 })
 
+// Нэвтрэх
 authForm.addEventListener('submit', async (e) => {
     e.preventDefault()
     const email = emailInput.value
@@ -43,7 +45,7 @@ authForm.addEventListener('submit', async (e) => {
     })
 
     if (error) {
-        showMessage(`nevtreh amjiltgui : ${error.message}`, "text-danger")
+        showMessage("Нэвтрэх амжилтгүй: " + error.message, "text-danger")
     } else {
         window.location.href = "dashboard.html"
     }
