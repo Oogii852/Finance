@@ -15,9 +15,15 @@
             <a class="navbar-brand fw-bold" href="#">
                 <i class="fa-solid fa-sack-dollar text-warning"></i> Санхүүгийн самбар
             </a>
-            <div class="d-flex align-items-center gap-3">
-                <span class="text-light small" id="user-email">...</span>
+            <div class="d-flex align-items-center gap-2">
+                <span class="text-light small me-2" id="user-email">...</span>
+                
+                <button class="btn btn-sm btn-outline-warning fw-bold text-white border-warning-subtle" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasBadges">
+                    <i class="fa-solid fa-trophy text-warning me-1"></i> Миний амжилтууд
+                </button>
+                
                 <button class="btn btn-sm btn-outline-primary fw-bold text-white border-primary-subtle" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasBudget">Төсөв тогтоох</button>
+                
                 <button class="btn btn-outline-light btn-sm" id="btn-logout">
                     <i class="fa-solid fa-right-from-bracket"></i> Гарах
                 </button>
@@ -119,7 +125,22 @@
         </div>
     </div>
 
-    <!-- ТӨСӨВ OFFCANVAS -->
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasBadges" aria-labelledby="offcanvasBadgesLabel">
+        <div class="offcanvas-header bg-dark text-white">
+            <h5 class="offcanvas-title fw-bold" id="offcanvasBadgesLabel">
+                <i class="fa-solid fa-trophy text-warning me-2"></i>Миний амжилтууд
+            </h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body p-4 bg-light">
+            <p class="text-secondary small mb-4">
+                Таны санхүүгээ зөв удирдаж, системийг идэвхтэй ашигласны төлөө олгосон амжилтын тэмдгүүд.
+            </p>
+            <div id="badges-container" class="d-flex flex-wrap gap-3 justify-content-center">
+                </div>
+        </div>
+    </div>
+
     <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasBudget" aria-labelledby="offcanvasBudgetLabel">
         <div class="offcanvas-header bg-dark text-white">
             <h5 class="offcanvas-title fw-bold" id="offcanvasBudgetLabel">

@@ -1,4 +1,42 @@
-import { supabase } from './supabase.js'
+﻿import { supabase } from './supabase.js'
+const BADGES = {
+    FIRST_TRANSACTION: {
+        name: "Эхний Алхам",
+        icon: "fa-shoe-prints"
+    },
+    FIRST_INCOME: {
+        name: "Анхны Орлого",
+        icon: "fa-money-bill-wave"
+    },
+    FIRST_EXPENSE: {
+        name: "Анхны Худалдан Авалт",
+        icon: "fa-cart-shopping"
+    },
+    FIRST_BUDGET: {
+        name: "Төлөвлөгч",
+        icon: "fa-bullseye"
+    },
+    BOOKKEEPER: {
+        name: "Бүртгэлч",
+        icon: "fa-book"
+    },
+    POSITIVE_BALANCE: {
+        name: "Эерэг Баланс",
+        icon: "fa-gem"
+    },
+    MONEY_MAKER: {
+        name: "Мөнгө Ологч",
+        icon: "fa-sack-dollar"
+    },
+    SAVINGS_MASTER: {
+        name: "Хуримтлуулагч",
+        icon: "fa-piggy-bank"
+    },
+    FINANCE_KING: {
+        name: "Санхүүгийн Хаан",
+        icon: "fa-crown"
+    }
+};
 
 const transactionForm = document.getElementById('transaction-form');
 const txTypeInput = document.getElementById('tx-type');
@@ -14,12 +52,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
     document.getElementById('user-email').textContent = user.email;
-    await fetchTransactions();
-    fetchBudgets();
+    
+    // Анхны өгөгдлүүдийг зэрэг татаж ачаална
+    await Promise.all([
+        fetchTransactions(),
+        fetchBadges(),
+        fetchBudgets()
+    ]);
 
-    // Offcanvas нээгдэх үед төсвүүдийг шинэчилнэ
+    // Төсвийн Offcanvas нээгдэх үед
     document.getElementById('offcanvasBudget').addEventListener('show.bs.offcanvas', () => {
         fetchBudgets();
+    });
+
+    // Амжилтын Offcanvas нээгдэх үед датаг дахин шинэчилнэ
+    document.getElementById('offcanvasBadges').addEventListener('show.bs.offcanvas', () => {
+        fetchBadges();
     });
 });
 
@@ -86,7 +134,7 @@ transactionForm.addEventListener('submit', async (e) => {
     }
 
     // Supabase руу хадгалах
-    const { data, error } = await supabase
+    const { error } = await supabase
         .from('transactions')
         .insert([{
             user_id: user.id,
@@ -95,15 +143,17 @@ transactionForm.addEventListener('submit', async (e) => {
             amount: amount,
             description: description,
             date: date
-        }])
-        .select();
+        }]);
 
     if (error) {
         alert("Гүйлгээг хадгалахад алдаа гарлаа: " + error.message);
     } else {
         alert("Гүйлгээ амжилттай бүртгэгдлээ");
         transactionForm.reset();
-        fetchTransactions();
+
+        await checkBadges(user.id);
+        await fetchTransactions();
+        await fetchBadges();
     }
 });
 
@@ -113,13 +163,20 @@ window.deleteTransaction = async function(id) {
     if (!confirmDelete) return;
 
     try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
         const { error } = await supabase
             .from('transactions')
             .delete()
             .eq('id', id);
+
         if (error) throw error;
         alert("Гүйлгээ амжилттай устгагдлаа.");
-        fetchTransactions();
+        
+        await fetchTransactions();
+        await checkBadges(user.id);
+        await fetchBadges();
     } catch (error) {
         alert("Гүйлгээ устгахад алдаа гарлаа: " + error.message);
     }
@@ -143,16 +200,18 @@ async function fetchTransactions() {
 
     let totalIncome = 0;
     let totalExpense = 0;
-    transactions.forEach(tx => {
-        if (tx.type === 'income') totalIncome += tx.amount;
-        else if (tx.type === 'expense') totalExpense += tx.amount;
-    });
+    if (transactions) {
+        transactions.forEach(tx => {
+            if (tx.type === 'income') totalIncome += tx.amount;
+            else if (tx.type === 'expense') totalExpense += tx.amount;
+        });
+    }
 
     const totalBalance = totalIncome - totalExpense;
     document.getElementById('total-balance').textContent = `${totalBalance.toLocaleString()} ₮`;
     document.getElementById('total-income').textContent = `${totalIncome.toLocaleString()} ₮`;
     document.getElementById('total-expense').textContent = `${totalExpense.toLocaleString()} ₮`;
-    renderTransactions(transactions);
+    renderTransactions(transactions || []);
 }
 
 // Хүснэгтэд харуулах
@@ -245,6 +304,9 @@ budgetForm.addEventListener('submit', async (e) => {
         budgetForm.reset();
         const instance = bootstrap.Offcanvas.getInstance(document.getElementById('offcanvasBudget'));
         if (instance) instance.hide();
+        
+        await checkBadges(user.id);
+        await fetchBadges();
         fetchBudgets();
     }
 });
@@ -291,4 +353,94 @@ async function fetchBudgets() {
         `;
     });
     budgetsContainer.innerHTML = htmlContent;
+}
+
+// Амжилт олгох функц
+async function awardBadge(userId, badge) {
+    const { data: existing } = await supabase
+        .from('badges')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('badge_name', badge.name)
+        .maybeSingle();
+
+    if (existing) return;
+
+    const { error } = await supabase
+        .from('badges')
+        .insert([{
+            user_id: userId,
+            badge_name: badge.name,
+            badge_icon: badge.icon
+        }]);
+
+    if (!error) {
+        alert(`🏆 Achievement Unlocked!\n\n${badge.name}`);
+    }
+}
+
+// Нөхцөл шалгах функц
+async function checkBadges(userId) {
+    const { data: transactions } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('user_id', userId);
+
+    const { data: budgets } = await supabase
+        .from('budgets')
+        .select('*')
+        .eq('user_id', userId);
+
+    const txList = transactions || [];
+    const budgetList = budgets || [];
+
+    let totalIncome = 0;
+    let totalExpense = 0;
+
+    txList.forEach(tx => {
+        if (tx.type === 'income') totalIncome += tx.amount;
+        if (tx.type === 'expense') totalExpense += tx.amount;
+    });
+
+    const balance = totalIncome - totalExpense;
+
+    if (txList.length >= 1) await awardBadge(userId, BADGES.FIRST_TRANSACTION);
+    if (txList.some(t => t.type === 'income')) await awardBadge(userId, BADGES.FIRST_INCOME);
+    if (txList.some(t => t.type === 'expense')) await awardBadge(userId, BADGES.FIRST_EXPENSE);
+    if (budgetList.length >= 1) await awardBadge(userId, BADGES.FIRST_BUDGET);
+    if (balance >= 100000) await awardBadge(userId, BADGES.POSITIVE_BALANCE);
+    if (balance >= 1000000) await awardBadge(userId, BADGES.SAVINGS_MASTER);
+}
+
+// Баазаас амжилтуудыг татаж Offcanvas дотор зурах функц
+// Баазаас амжилтуудыг татаж Offcanvas дотор зурах функц
+async function fetchBadges() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data: badges } = await supabase
+        .from('badges')
+        .select('*')
+        .eq('user_id', user.id);
+
+    const container = document.getElementById('badges-container');
+    if (!container) return;
+
+    if (!badges || badges.length === 0) {
+        container.innerHTML = '<div class="text-center text-muted py-4 small w-100"><i class="fa-solid fa-lock fs-3 d-block mb-2"></i>Одоогоор амжилтын тэмдэг аваагүй байна.</div>';
+        return;
+    }
+
+    let html = '';
+    badges.forEach(function(b) {
+        const iconVal = b.badge_icon || b.icon || '';
+        const icon = iconVal.startsWith('fa-') ? iconVal : 'fa-' + iconVal;
+        html += '<div class="card border-0 shadow-sm text-center p-3 align-items-center justify-content-center bg-white" style="width:130px;border-radius:12px;min-height:110px;">';
+        html += '<div class="p-3 bg-warning-subtle rounded-circle mb-2 d-flex align-items-center justify-content-center" style="width:56px;height:56px;">';
+        html += '<i class="fa-solid ' + icon + ' fa-lg text-warning"></i>';
+        html += '</div>';
+        html += '<div class="fw-bold text-dark" style="font-size:0.78rem;line-height:1.3;">' + b.badge_name + '</div>';
+        html += '</div>';
+    });
+    container.innerHTML = html;
 }
